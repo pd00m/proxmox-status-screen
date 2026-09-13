@@ -1,18 +1,18 @@
-# Proxmox vertical theme - 8.8" portrait (480x1920) - console / TUI style
+# Proxmox Turzx 8" horizontal theme - 8.8" landscape (1920x480) - console / TUI style
 #
-# Target: 8.8" panel (1920x480 native) mounted vertically, so the logical canvas
-# is 480 wide x 1920 tall. Set display.revision: C.
+# The proxmox-turzx-8inch-vertical layout reflowed for the 1920x480 landscape
+# canvas: two side-by-side server panels, each with CPU/MEM/NET histograms and a
+# guest list. Panels are addressed by index into the servers list (servers[0],
+# servers[1]) and the list widget's `server: <index|name>` selects which server's
+# guests to show, so the theme works for any two servers.
 #
-# Two stacked per-server panels, each with CPU/MEM history histograms, a
-# side-by-side network download/upload histogram and a guest list. Panels are
-# addressed by index into the servers list (servers[0], servers[1]), and the
-# list widget's `server: <index|name>` selects which server's guests to show,
-# so the theme works for any two servers.
-#
-# The panel dividers in background.png are aligned with the header blocks below:
-#   y=152  panel 1 header / CPU section
-#   y=984  panel 1 / panel 2
-#   y=1094 panel 2 header / CPU section
+# The divider lines baked into background.png are aligned with the layout:
+#   y=2    top border
+#   y=40   global header / panels
+#   y=106  panel header / body
+#   x=960  panel 1 / panel 2
+#   x=480, x=1440  metrics / guest list
+#   y=470  bottom border
 # Keep them in sync when moving widgets.
 #
 # Widgets use Python format-string bindings resolved against the data context.
@@ -22,7 +22,7 @@
 ---
 display:
   size: '8.8"'
-  orientation: portrait
+  orientation: landscape
   rgb_led: 0, 160, 90
 
 static_images:
@@ -30,87 +30,87 @@ static_images:
     path: background.png
     x: 0
     y: 0
-    width: 480
-    height: 1920
+    width: 1920
+    height: 480
 
 static_text:
   P1_CPU_LABEL:
     text: "CPU"
-    x: 24
-    y: 192
+    x: 16
+    y: 116
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 28
-    font_color: 0, 150, 90
+    font_size: 24
+    font_color: 0, 230, 118
     background_image: background.png
 
   P1_MEM_LABEL:
     text: "MEM"
-    x: 24
-    y: 306
+    x: 16
+    y: 210
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 28
+    font_size: 24
     font_color: 255, 179, 0
     background_image: background.png
 
   P1_NET_LABEL:
     text: "NET"
-    x: 24
-    y: 416
+    x: 16
+    y: 304
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 28
+    font_size: 24
     font_color: 0, 176, 255
     background_image: background.png
 
   P1_GUESTS_LABEL:
     text: "GUESTS"
-    x: 24
-    y: 554
+    x: 490
+    y: 116
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 28
+    font_size: 24
     font_color: 0, 150, 90
     background_image: background.png
 
   P2_CPU_LABEL:
     text: "CPU"
-    x: 24
-    y: 1134
+    x: 976
+    y: 116
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 28
-    font_color: 0, 150, 90
+    font_size: 24
+    font_color: 0, 230, 118
     background_image: background.png
 
   P2_MEM_LABEL:
     text: "MEM"
-    x: 24
-    y: 1248
+    x: 976
+    y: 210
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 28
+    font_size: 24
     font_color: 255, 179, 0
     background_image: background.png
 
   P2_NET_LABEL:
     text: "NET"
-    x: 24
-    y: 1358
+    x: 976
+    y: 304
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 28
+    font_size: 24
     font_color: 0, 176, 255
     background_image: background.png
 
   P2_GUESTS_LABEL:
     text: "GUESTS"
-    x: 24
-    y: 1496
+    x: 1450
+    y: 116
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 28
+    font_size: 24
     font_color: 0, 150, 90
     background_image: background.png
 
 widgets:
   # --- Global header ------------------------------------------------------
   - type: text
-    x: 24
-    y: 20
+    x: 16
+    y: 13
     value: "SRV {summary.servers_online}/{summary.servers_total}  NODE {summary.nodes_online}/{summary.nodes_total}  VM {summary.vms_running}/{summary.vms_total}  CT {summary.cts_running}/{summary.cts_total}"
     font: roboto-mono/RobotoMono-Regular.ttf
     font_size: 20
@@ -120,46 +120,56 @@ widgets:
   # Panel 1 - servers[0]
   # ========================================================================
   - type: text
-    x: 24
-    y: 64
+    x: 16
+    y: 46
     value: "> {servers[0].name}"
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 36
+    font_size: 32
     font_color: 0, 230, 118
 
   - type: text
-    x: 456
-    y: 64
+    x: 944
+    y: 46
     value: "{servers[0].host}"
     font: roboto-mono/RobotoMono-Regular.ttf
-    font_size: 20
+    font_size: 18
     font_color: 200, 255, 210
     align: right
     anchor: rt
 
   - type: text
-    x: 24
-    y: 116
+    x: 16
+    y: 82
     value: "{servers[0].status}  PVE {servers[0].version}"
     font: roboto-mono/RobotoMono-Regular.ttf
-    font_size: 20
+    font_size: 18
     font_color: 200, 255, 210
 
   - type: text
-    x: 456
-    y: 116
+    x: 944
+    y: 82
     value: "node {servers[0].node_count}  vm/ct {servers[0].running_count}/{servers[0].guest_count}"
     font: roboto-mono/RobotoMono-Regular.ttf
-    font_size: 20
+    font_size: 18
     font_color: 200, 255, 210
+    align: right
+    anchor: rt
+
+  - type: text
+    x: 466
+    y: 116
+    value: "{servers[0].cpu_percent:>3.0f}%"
+    font: roboto-mono/RobotoMono-Bold.ttf
+    font_size: 26
+    font_color: 0, 230, 118
     align: right
     anchor: rt
 
   - type: histogram
-    x: 84
-    y: 178
-    width: 288
-    height: 92
+    x: 76
+    y: 112
+    width: 300
+    height: 78
     value: "{servers[0].cpu_percent}"
     history: 60
     min_value: 0
@@ -168,23 +178,23 @@ widgets:
     bar_width: 3
     bar_gap: 5
     axis: true
-    axis_color: 0, 90, 55
+    axis_color: 0, 70, 50
 
   - type: text
-    x: 456
-    y: 194
-    value: "{servers[0].cpu_percent:>3.0f}%"
+    x: 466
+    y: 210
+    value: "{servers[0].mem_percent:>3.0f}%"
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 30
-    font_color: 0, 230, 118
+    font_size: 26
+    font_color: 255, 179, 0
     align: right
     anchor: rt
 
   - type: histogram
-    x: 84
-    y: 292
-    width: 288
-    height: 92
+    x: 76
+    y: 206
+    width: 300
+    height: 78
     value: "{servers[0].mem_percent}"
     history: 60
     min_value: 0
@@ -193,39 +203,29 @@ widgets:
     bar_width: 3
     bar_gap: 5
     axis: true
-    axis_color: 0, 90, 55
+    axis_color: 80, 55, 0
 
   - type: text
-    x: 456
-    y: 308
-    value: "{servers[0].mem_percent:>3.0f}%"
-    font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 30
-    font_color: 255, 179, 0
-    align: right
-    anchor: rt
-
-  - type: text
-    x: 84
-    y: 414
+    x: 76
+    y: 306
     value: "dn {servers[0].net_in_human}"
     font: roboto-mono/RobotoMono-Regular.ttf
-    font_size: 22
+    font_size: 18
     font_color: 0, 176, 255
 
   - type: text
-    x: 276
-    y: 414
+    x: 240
+    y: 306
     value: "up {servers[0].net_out_human}"
     font: roboto-mono/RobotoMono-Regular.ttf
-    font_size: 22
+    font_size: 18
     font_color: 0, 176, 255
 
   - type: histogram
-    x: 84
-    y: 444
-    width: 176
-    height: 86
+    x: 76
+    y: 328
+    width: 145
+    height: 78
     value: "{servers[0].net_in}"
     history: 40
     min_value: 0
@@ -237,10 +237,10 @@ widgets:
     axis_color: 0, 70, 130
 
   - type: histogram
-    x: 276
-    y: 444
-    width: 176
-    height: 86
+    x: 231
+    y: 328
+    width: 145
+    height: 78
     value: "{servers[0].net_out}"
     history: 40
     min_value: 0
@@ -252,27 +252,27 @@ widgets:
     axis_color: 0, 70, 130
 
   - type: list
-    x: 24
-    y: 592
-    width: 432
+    x: 490
+    y: 140
+    width: 454
     rows: 6
-    row_height: 60
+    row_height: 54
     page_interval: 10
     server: 0
     sort_by: cpu_percent
     sort_reverse: true
     fields:
       - x: 0
-        width: 276
+        width: 250
         value: "{item.kind} {item.name}"
         font: roboto-mono/RobotoMono-Regular.ttf
-        font_size: 28
+        font_size: 26
         font_color: 200, 255, 210
-      - x: 280
+      - x: 252
         width: 18
         value: "{item.status_short}"
         font: roboto-mono/RobotoMono-Bold.ttf
-        font_size: 24
+        font_size: 22
         font_color: 0, 150, 90
         align: right
         color_value: "{item.status}"
@@ -280,18 +280,18 @@ widgets:
           running: "0, 230, 118"
           stopped: "255, 60, 60"
           paused: "255, 179, 0"
-      - x: 300
+      - x: 284
         width: 64
         value: "{item.cpu_percent:>3.0f}%"
         font: roboto-mono/RobotoMono-Bold.ttf
-        font_size: 26
+        font_size: 24
         font_color: 0, 230, 118
         align: right
-      - x: 366
+      - x: 354
         width: 64
         value: "{item.mem_percent:>3.0f}%"
         font: roboto-mono/RobotoMono-Bold.ttf
-        font_size: 26
+        font_size: 24
         font_color: 255, 179, 0
         align: right
 
@@ -299,46 +299,56 @@ widgets:
   # Panel 2 - servers[1]
   # ========================================================================
   - type: text
-    x: 24
-    y: 1006
+    x: 976
+    y: 46
     value: "> {servers[1].name}"
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 36
+    font_size: 32
     font_color: 0, 230, 118
 
   - type: text
-    x: 456
-    y: 1006
+    x: 1904
+    y: 46
     value: "{servers[1].host}"
     font: roboto-mono/RobotoMono-Regular.ttf
-    font_size: 20
+    font_size: 18
     font_color: 200, 255, 210
     align: right
     anchor: rt
 
   - type: text
-    x: 24
-    y: 1058
+    x: 976
+    y: 82
     value: "{servers[1].status}  PVE {servers[1].version}"
     font: roboto-mono/RobotoMono-Regular.ttf
-    font_size: 20
+    font_size: 18
     font_color: 200, 255, 210
 
   - type: text
-    x: 456
-    y: 1058
+    x: 1904
+    y: 82
     value: "node {servers[1].node_count}  vm/ct {servers[1].running_count}/{servers[1].guest_count}"
     font: roboto-mono/RobotoMono-Regular.ttf
-    font_size: 20
+    font_size: 18
     font_color: 200, 255, 210
+    align: right
+    anchor: rt
+
+  - type: text
+    x: 1426
+    y: 116
+    value: "{servers[1].cpu_percent:>3.0f}%"
+    font: roboto-mono/RobotoMono-Bold.ttf
+    font_size: 26
+    font_color: 0, 230, 118
     align: right
     anchor: rt
 
   - type: histogram
-    x: 84
-    y: 1120
-    width: 288
-    height: 92
+    x: 1036
+    y: 112
+    width: 300
+    height: 78
     value: "{servers[1].cpu_percent}"
     history: 60
     min_value: 0
@@ -347,23 +357,23 @@ widgets:
     bar_width: 3
     bar_gap: 5
     axis: true
-    axis_color: 0, 90, 55
+    axis_color: 0, 70, 50
 
   - type: text
-    x: 456
-    y: 1136
-    value: "{servers[1].cpu_percent:>3.0f}%"
+    x: 1426
+    y: 210
+    value: "{servers[1].mem_percent:>3.0f}%"
     font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 30
-    font_color: 0, 230, 118
+    font_size: 26
+    font_color: 255, 179, 0
     align: right
     anchor: rt
 
   - type: histogram
-    x: 84
-    y: 1234
-    width: 288
-    height: 92
+    x: 1036
+    y: 206
+    width: 300
+    height: 78
     value: "{servers[1].mem_percent}"
     history: 60
     min_value: 0
@@ -372,39 +382,29 @@ widgets:
     bar_width: 3
     bar_gap: 5
     axis: true
-    axis_color: 0, 90, 55
+    axis_color: 80, 55, 0
 
   - type: text
-    x: 456
-    y: 1250
-    value: "{servers[1].mem_percent:>3.0f}%"
-    font: roboto-mono/RobotoMono-Bold.ttf
-    font_size: 30
-    font_color: 255, 179, 0
-    align: right
-    anchor: rt
-
-  - type: text
-    x: 84
-    y: 1356
+    x: 1036
+    y: 306
     value: "dn {servers[1].net_in_human}"
     font: roboto-mono/RobotoMono-Regular.ttf
-    font_size: 22
+    font_size: 18
     font_color: 0, 176, 255
 
   - type: text
-    x: 276
-    y: 1356
+    x: 1200
+    y: 306
     value: "up {servers[1].net_out_human}"
     font: roboto-mono/RobotoMono-Regular.ttf
-    font_size: 22
+    font_size: 18
     font_color: 0, 176, 255
 
   - type: histogram
-    x: 84
-    y: 1386
-    width: 176
-    height: 86
+    x: 1036
+    y: 328
+    width: 145
+    height: 78
     value: "{servers[1].net_in}"
     history: 40
     min_value: 0
@@ -416,10 +416,10 @@ widgets:
     axis_color: 0, 70, 130
 
   - type: histogram
-    x: 276
-    y: 1386
-    width: 176
-    height: 86
+    x: 1191
+    y: 328
+    width: 145
+    height: 78
     value: "{servers[1].net_out}"
     history: 40
     min_value: 0
@@ -431,27 +431,27 @@ widgets:
     axis_color: 0, 70, 130
 
   - type: list
-    x: 24
-    y: 1534
-    width: 432
+    x: 1450
+    y: 140
+    width: 454
     rows: 6
-    row_height: 60
+    row_height: 54
     page_interval: 10
     server: 1
     sort_by: cpu_percent
     sort_reverse: true
     fields:
       - x: 0
-        width: 276
+        width: 250
         value: "{item.kind} {item.name}"
         font: roboto-mono/RobotoMono-Regular.ttf
-        font_size: 28
+        font_size: 26
         font_color: 200, 255, 210
-      - x: 280
+      - x: 252
         width: 18
         value: "{item.status_short}"
         font: roboto-mono/RobotoMono-Bold.ttf
-        font_size: 24
+        font_size: 22
         font_color: 0, 150, 90
         align: right
         color_value: "{item.status}"
@@ -459,17 +459,17 @@ widgets:
           running: "0, 230, 118"
           stopped: "255, 60, 60"
           paused: "255, 179, 0"
-      - x: 300
+      - x: 284
         width: 64
         value: "{item.cpu_percent:>3.0f}%"
         font: roboto-mono/RobotoMono-Bold.ttf
-        font_size: 26
+        font_size: 24
         font_color: 0, 230, 118
         align: right
-      - x: 366
+      - x: 354
         width: 64
         value: "{item.mem_percent:>3.0f}%"
         font: roboto-mono/RobotoMono-Bold.ttf
-        font_size: 26
+        font_size: 24
         font_color: 255, 179, 0
         align: right

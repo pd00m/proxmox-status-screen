@@ -1,6 +1,6 @@
 # Proxmox default theme - 3.5" landscape (480x320) - console / TUI style
 #
-# The proxmox-vertical look adapted to the 480x320 landscape canvas: a single
+# The proxmox-turzx-8inch-vertical look adapted to the 480x320 landscape canvas: a single
 # server panel (servers[0]) with a header, CPU/MEM/NET histograms and a guest
 # list. Set display.revision to match your 3.5" panel.
 #

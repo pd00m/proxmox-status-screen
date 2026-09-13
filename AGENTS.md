@@ -186,8 +186,9 @@ All widgets accept `show: false` to hide them.
   `<=` the `y` of the next. This is why the vertical theme's CPU/MEM histograms
   have a gap.
 - **Keep baked-in background divider lines in sync** with widget positions. The
-  `proxmox-vertical` theme documents its divider y-positions in a comment at the
-  top of `theme.yaml`; if you move sections, regenerate `background.png`.
+  `proxmox-turzx-8inch-vertical` theme documents its divider y-positions in a
+  comment at the top of `theme.yaml`; if you move sections, regenerate
+  `background.png`.
 - **Dynamic text must stay at a fixed `x`/`y`.** The driver caches the previous
   bounding box per origin and repaints it to avoid ghosting; moving a widget's
   origin defeats this.
@@ -273,5 +274,8 @@ and the README revision table. Do not route hardware outside that factory.
 - `README.md` — user-facing docs, Proxmox setup, configuration and theming.
 - `themes/proxmox-default/theme.yaml` — landscape 3.5" example (single server
   panel in the vertical/TUI style).
-- `themes/proxmox-vertical/theme.yaml` — portrait 8.8" example (8.8" / revision C).
+- `themes/proxmox-turzx-8inch-vertical/theme.yaml` — portrait 8.8" example
+  (8.8" / revision C).
+- `themes/proxmox-turzx-8inch-horizontal/theme.yaml` — landscape 8.8" example
+  (8.8" / revision C), two side-by-side server panels.
 - `config.example.yaml` — every configuration option, documented.

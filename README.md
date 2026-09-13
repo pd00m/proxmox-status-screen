@@ -9,7 +9,17 @@ but replaces the sensor collection, theming and application logic with a
 Proxmox-oriented implementation. There is no desktop UI: it runs in the
 foreground and is meant to be supervised by systemd.
 
-<img src="docs/preview.png" alt="proxmox-vertical theme on an 8.8-inch portrait display" width="240">
+`proxmox-default` (3.5" landscape):
+
+<img src="docs/preview-default.png" alt="proxmox-default theme on a 3.5-inch landscape display" width="360">
+
+`proxmox-turzx-8inch-vertical` (8.8" portrait):
+
+<img src="docs/preview-vertical.png" alt="proxmox-turzx-8inch-vertical theme on an 8.8-inch portrait display" width="180">
+
+`proxmox-turzx-8inch-horizontal` (8.8" landscape):
+
+<img src="docs/preview-horizontal.png" alt="proxmox-turzx-8inch-horizontal theme on an 8.8-inch landscape display" width="720">
 
 ## Features
 
@@ -67,7 +77,7 @@ cp config.example.yaml config.yaml
 Then set these values in `config.yaml`:
 
 ```yaml
-theme: proxmox-vertical
+theme: proxmox-turzx-8inch-vertical
 display:
   revision: SIMU
 data:
@@ -227,9 +237,10 @@ EnvironmentFile=-/etc/proxmox-status-screen/env
 ## Theming
 
 A theme lives in `themes/<name>/` and contains a `theme.yaml` plus its assets.
-Two themes are bundled: `proxmox-default` (3.5" landscape, single server panel
-in the vertical/TUI style) and `proxmox-vertical` (8.8" portrait, two stacked
-server panels).
+Three themes are bundled: `proxmox-default` (3.5" landscape, single server panel
+in the vertical/TUI style), `proxmox-turzx-8inch-vertical` (8.8" portrait, two
+stacked server panels) and `proxmox-turzx-8inch-horizontal` (8.8" landscape, two
+side-by-side server panels).
 
 ### Data context
 
