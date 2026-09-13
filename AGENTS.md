@@ -27,6 +27,8 @@ pytest                  # unit tests
 ```
 
 All commands accept `--config PATH`, `--log-file PATH`, `--log-level LEVEL`.
+`run` and `once` also accept `--interval SECONDS` (`-i`, 5–3600) to override
+`render.interval`.
 
 For fast, hardware-free iteration, create a config with `display.revision: SIMU`
 and `data.source: stub` (see `tests/fixtures/dev-config.yaml`), then inspect
@@ -50,7 +52,11 @@ main.py ─> Collector.refresh() ─> models.build_context() ─> ThemeRenderer.
   source generates demo data.
 - `build_context()` turns servers into the mapping exposed to theme bindings.
 - `ThemeRenderer` draws static assets once, then re-draws dynamic widgets each
-  frame; it owns the graph history buffers and list page rotation.
+  frame; it owns the graph history buffers and list page rotation. Widgets whose
+  resolved inputs are unchanged are skipped (`widgets.widget_signature`), so only
+  visible changes are rasterized and sent to the display.
+- `UpdateQueueHandler` (in `scheduler.py`) serializes display writes and blocks on
+  its queue until work arrives, so an idle daemon uses no periodic CPU.
 
 ## Key files
 
@@ -143,7 +149,7 @@ All widgets accept `show: false` to hide them.
 - **`progress`** — `value`, `x`, `y`, `width`, `height`, `min_value`, `max_value`, `bar_color`, `bar_outline`, `reverse_direction`.
 - **`radial`** — `value`, `x`/`y` (center), `radius`, `width` (bar thickness), `min_value`, `max_value`, `angle_start`, `angle_end`, `angle_steps`, `angle_sep`, `clockwise`, `text`, `show_text`, `font`, `font_size`, `font_color`, `bar_color`, `bar_background_color`, `draw_bar_background`, `bar_decoration`, `custom_bbox`, `text_offset`.
 - **`line_graph`** — `value`, `x`, `y`, `width`, `height`, `history`, `min_value`, `max_value`, `autoscale`, `line_color`, `line_width`, `axis`, `axis_color`, `axis_font`, `axis_font_size`.
-- **`histogram`** — `value`, `x`, `y`, `width`, `height`, `history`, `min_value`, `max_value`, `autoscale`, `bar_color`, `bar_gap`, `axis`, `axis_color`, `key` (optional history key).
+- **`histogram`** — `value`, `x`, `y`, `width`, `height`, `history`, `min_value`, `max_value`, `autoscale`, `bar_color`, `bar_width` (fixed integer bar width, default 3), `bar_gap` (pixels, default 2), `axis`, `axis_color`, `key` (optional history key). Bars are uniform; only the most recent samples that fit are shown.
 - **`image`** — `path`, `x`, `y`, `width`, `height`.
 - **`list`** — `source` (`guests`/`nodes`/`servers`) **or** `server: <index|name>`
   (gathers that server's guests), `x`, `y`, `width`, `rows`, `row_height`,
@@ -168,7 +174,7 @@ All widgets accept `show: false` to hide them.
 
 - Theme assets are resolved relative to the theme folder (`config.theme_asset`).
 - Fonts are resolved relative to `fonts/` (`config.font_path`). Available:
-  `roboto-mono/`, `roboto/`, `geforce/`.
+  `roboto-mono/`, `roboto/`.
 - If a widget sets `background_image`, that image is painted under it (and
   cropped to the widget box) — this is how stale pixels are erased. Omit
   `background_image`/`background_color` to inherit the theme background.
@@ -185,6 +191,15 @@ All widgets accept `show: false` to hide them.
 - **Dynamic text must stay at a fixed `x`/`y`.** The driver caches the previous
   bounding box per origin and repaints it to avoid ghosting; moving a widget's
   origin defeats this.
+- **Unchanged widgets are skipped.** `ThemeRenderer.render()` compares a
+  per-widget signature (`widgets.widget_signature`) and skips drawing when it is
+  unchanged. `text`, `progress`, `radial`, `image` and `list` are cacheable;
+  `line_graph`, `histogram` and unknown types always redraw. A new widget whose
+  output can change without its spec bindings changing must not be treated as
+  cacheable.
+- **Background images are cached.** Widgets decode their background through
+  `lcd.open_image()` (or `widgets._open_background()`), which caches decoded
+  images; do not call `Image.open()` directly in a per-frame draw path.
 - The `list` widget always iterates `rows` times and draws a space in empty
   slots, so shrinking a list erases removed rows.
 
@@ -256,6 +271,7 @@ and the README revision table. Do not route hardware outside that factory.
 ## Reference
 
 - `README.md` — user-facing docs, Proxmox setup, configuration and theming.
-- `themes/proxmox-default/theme.yaml` — landscape 3.5" example.
+- `themes/proxmox-default/theme.yaml` — landscape 3.5" example (single server
+  panel in the vertical/TUI style).
 - `themes/proxmox-vertical/theme.yaml` — portrait 8.8" example (8.8" / revision C).
 - `config.example.yaml` — every configuration option, documented.

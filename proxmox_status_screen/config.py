@@ -44,6 +44,10 @@ class DisplayConfig:
     simu_webserver_port: int = 5678
 
 
+MIN_INTERVAL = 5.0
+MAX_INTERVAL = 3600.0
+
+
 @dataclass
 class RenderConfig:
     interval: float = 5.0
@@ -239,8 +243,11 @@ def load_config(config_path: Union[str, Path]) -> AppConfig:
                     f"when data.source is 'proxmox'"
                 )
 
-    if render.interval <= 0:
-        raise ConfigError("render.interval must be > 0")
+    if not MIN_INTERVAL <= render.interval <= MAX_INTERVAL:
+        raise ConfigError(
+            f"render.interval must be between {MIN_INTERVAL:.0f}s and "
+            f"{MAX_INTERVAL:.0f}s (got {render.interval:g}s)"
+        )
 
     config = AppConfig(
         theme=theme_name,

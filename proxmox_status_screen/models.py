@@ -190,6 +190,7 @@ class Node:
 @dataclass
 class Server:
     name: str
+    host: str = ""
     online: bool = False
     error: str = ""
     version: str = ""

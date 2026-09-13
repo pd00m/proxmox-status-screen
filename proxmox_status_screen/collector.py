@@ -162,6 +162,7 @@ class Collector:
             )
             return Server(
                 name=server_cfg.name,
+                host=server_cfg.host,
                 online=True,
                 version=version,
                 nodes=nodes,
@@ -208,6 +209,7 @@ class Collector:
     def _offline_server(self, server_cfg: ServerConfig, error: str) -> Server:
         return Server(
             name=server_cfg.name,
+            host=server_cfg.host,
             online=False,
             error=error,
             nodes=self._last_good.get(server_cfg.name, []),
@@ -286,6 +288,7 @@ def _stub_servers() -> List[Server]:
 
     pve_main = Server(
         name="pve-main",
+        host="192.168.1.10",
         online=True,
         version="8.2.2",
         nodes=[nodes["pve1"], nodes["pve2"]],
@@ -295,6 +298,7 @@ def _stub_servers() -> List[Server]:
     )
     pve_edge = Server(
         name="pve-edge",
+        host="192.168.1.20",
         online=True,
         version="8.1.4",
         nodes=[nodes["edge1"]],

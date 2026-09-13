@@ -79,8 +79,6 @@ its revision history. Thank you all:
 - `fonts/roboto` and `fonts/roboto-mono`: Roboto and Roboto Mono, Copyright
   Google, licensed under the Apache License 2.0 (see the `LICENSE.txt` files in
   those folders).
-- `fonts/geforce`: bundled from turing-smart-screen-python; please refer to the
-  upstream project for its license.
 
 ## Third-party dependencies
 

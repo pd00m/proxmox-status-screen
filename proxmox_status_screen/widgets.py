@@ -38,6 +38,71 @@ def _background_image(config: AppConfig, spec: Mapping[str, Any]):
     return config.default_background()
 
 
+def _open_background(lcd, path: str) -> Image.Image:
+    """Decode a background image, reusing the driver's cache when available.
+
+    Widgets are redrawn every frame, so re-decoding a PNG from disk each time is
+    wasteful. The driver caches decoded images (``open_image``); fall back to a
+    plain open for test doubles that do not implement it.
+    """
+    opener = getattr(lcd, "open_image", None)
+    if opener is not None:
+        return opener(path)
+    return Image.open(path)
+
+
+# Widget types whose output depends on a rolling history and therefore changes on
+# every frame even when the bound value is unchanged.
+_ALWAYS_REDRAW = {"line_graph", "histogram"}
+
+# Types whose redraw can safely be skipped when their resolved inputs are
+# unchanged. Unknown types are never skipped (conservative).
+_CACHEABLE = {"text", "progress", "radial", "image", "list"}
+
+
+def _freeze(value: Any) -> Any:
+    """Convert a nested structure into something hashable/comparable."""
+    if isinstance(value, dict):
+        return tuple(sorted((k, _freeze(v)) for k, v in value.items()))
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze(v) for v in value)
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return repr(value)
+
+
+def _resolve_tree(value: Any, context: Mapping[str, Any]) -> Any:
+    """Resolve every binding in a widget spec against the context."""
+    if isinstance(value, str):
+        return render_binding(value, context)
+    if isinstance(value, dict):
+        return {k: _resolve_tree(v, context) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_resolve_tree(v, context) for v in value]
+    return value
+
+
+def widget_signature(
+    spec: Mapping[str, Any],
+    context: Mapping[str, Any],
+    page_index: int = 0,
+) -> Any:
+    """Return a comparable signature of a widget's resolved inputs.
+
+    ``None`` means the widget must always be redrawn (history-based graphs and
+    unknown types). Otherwise the renderer can skip a widget whose signature is
+    unchanged since the previous frame.
+    """
+    widget_type = str(spec.get("type", "")).lower()
+    if spec.get("show") is False:
+        return ("hidden",)
+    if widget_type in _ALWAYS_REDRAW or widget_type not in _CACHEABLE:
+        return None
+    if widget_type == "list":
+        return _list_signature(spec, context, page_index)
+    return _freeze(_resolve_tree(spec, context))
+
+
 def draw_widget(
     lcd,
     config: AppConfig,
@@ -210,8 +275,9 @@ def draw_histogram(
 ) -> None:
     """Draw a vertical-bar histogram of the recent history of a value.
 
-    One bar is drawn per sample (oldest on the left). Missing samples are left
-    blank so the chart does not stretch while the history fills up.
+    Bars use a fixed integer width and gap so they all look identical, and the
+    most recent samples that fit are shown (oldest on the left). Missing samples
+    are left blank so the chart does not stretch while the history fills up.
     """
     x = int(spec.get("x", 0))
     y = int(spec.get("y", 0))
@@ -245,16 +311,23 @@ def draw_histogram(
 
     background = _background_image(config, spec)
     if background:
-        image = Image.open(background).convert("RGB").crop((x, y, x + width, y + height)).copy()
+        image = _open_background(lcd, background).convert("RGB").crop((x, y, x + width, y + height)).copy()
     else:
         image = Image.new("RGB", (width, height), parse_color(spec.get("background_color", (0, 0, 0))))
 
     draw = ImageDraw.Draw(image)
     bar_color = parse_color(spec.get("bar_color", (0, 0, 0)))
-    gap = float(spec.get("bar_gap", 1))
-    bin_width = width / len(values)
+    gap = max(0, int(round(float(spec.get("bar_gap", 2)))))
+    bar_width = max(1, int(spec.get("bar_width", 3)))
+    pitch = bar_width + gap
 
-    for index, sample in enumerate(values):
+    # A fixed integer pitch keeps every bar the same width. Showing only the
+    # samples that fit avoids the 3px/4px jitter of flooring a fractional pitch.
+    count = max(1, (width + gap) // pitch)
+    samples = values[-count:]
+    start = max(0, (width - (len(samples) * pitch - gap)) // 2)
+
+    for index, sample in enumerate(samples):
         if math.isnan(sample):
             continue
         fraction = (sample - min_value) / (max_value - min_value)
@@ -262,10 +335,8 @@ def draw_histogram(
         bar_height = int(round(fraction * height))
         if bar_height <= 0:
             continue
-        left = int(index * bin_width)
-        right = int((index + 1) * bin_width - gap)
-        if right <= left:
-            right = left
+        left = start + index * pitch
+        right = left + bar_width - 1
         draw.rectangle([left, height - bar_height, right, height - 1], fill=bar_color)
 
     if spec.get("axis"):
@@ -331,6 +402,38 @@ def list_page_count(spec: Mapping[str, Any], context: Mapping[str, Any]) -> int:
     return max(1, ceil(len(list_items(spec, context)) / rows))
 
 
+def _visible_rows(spec: Mapping[str, Any], context: Mapping[str, Any], page_index: int):
+    """Resolve the list rows visible on ``page_index`` and their binding alias."""
+    items = list_items(spec, context)
+    rows = max(1, int(spec.get("rows", 1)))
+    total_pages = max(1, ceil(len(items) / rows))
+    page = page_index % total_pages
+    page_items = items[page * rows : page * rows + rows]
+    singular = _SINGULAR.get(str(spec.get("source", "guests")), "item")
+    return rows, page, page_items, singular
+
+
+def _list_signature(
+    spec: Mapping[str, Any], context: Mapping[str, Any], page_index: int
+) -> Any:
+    """Signature of the resolved field values for the visible list rows."""
+    rows, page, page_items, singular = _visible_rows(spec, context, page_index)
+    fields = spec.get("fields", [])
+    values: List[str] = []
+    for row in range(rows):
+        item = page_items[row] if row < len(page_items) else None
+        row_context = dict(context)
+        row_context["item"] = item
+        row_context[singular] = item
+        for field in fields:
+            values.append(render_binding(field.get("value"), row_context))
+            if field.get("color_map"):
+                values.append(
+                    render_binding(field.get("color_value", "{item.status}"), row_context)
+                )
+    return (page, tuple(values))
+
+
 def draw_list(
     lcd,
     config: AppConfig,
@@ -338,14 +441,7 @@ def draw_list(
     context: Mapping[str, Any],
     page_index: int,
 ) -> None:
-    items = list_items(spec, context)
-    rows = max(1, int(spec.get("rows", 1)))
-    total_pages = max(1, ceil(len(items) / rows))
-    page = page_index % total_pages
-    page_items = items[page * rows : page * rows + rows]
-
-    source = str(spec.get("source", "guests"))
-    singular = _SINGULAR.get(source, "item")
+    rows, _page, page_items, singular = _visible_rows(spec, context, page_index)
     row_height = int(spec.get("row_height", 20))
     base_x = int(spec.get("x", 0))
     base_y = int(spec.get("y", 0))

@@ -31,7 +31,7 @@ display:
   simu_webserver_port: 5678
 
 render:
-  interval: 5             # Seconds between data refresh + screen redraw
+  interval: 5             # Seconds between data refresh + screen redraw (5-3600)
   page_interval: 10       # Seconds between guest-list pages (when overflowing)
 
 data:

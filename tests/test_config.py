@@ -59,3 +59,25 @@ def test_no_servers_is_rejected(tmp_path):
 
     with pytest.raises(ConfigError):
         load_config(path)
+
+
+@pytest.mark.parametrize("interval", [0, 4.9, 3600.1, 7200])
+def test_interval_out_of_range_is_rejected(tmp_path, interval):
+    raw = yaml.safe_load(CONFIG_PATH.read_text())
+    raw["render"]["interval"] = interval
+    path = tmp_path / "config.yaml"
+    path.write_text(yaml.safe_dump(raw))
+
+    with pytest.raises(ConfigError):
+        load_config(path)
+
+
+@pytest.mark.parametrize("interval", [5, 60, 3600])
+def test_interval_in_range_is_accepted(tmp_path, interval):
+    raw = yaml.safe_load(CONFIG_PATH.read_text())
+    raw["render"]["interval"] = interval
+    path = tmp_path / "config.yaml"
+    path.write_text(yaml.safe_dump(raw))
+
+    config = load_config(path)
+    assert config.render.interval == float(interval)

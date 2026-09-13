@@ -4,6 +4,7 @@ from math import ceil
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from fake_lcd import FakeLcd
 from proxmox_status_screen import widgets
@@ -127,3 +128,96 @@ def test_draw_histogram_records_image_and_history(config):
     widgets.draw_histogram(lcd, config, spec, ctx, histories)
     assert len(histories["{summary.cpu_percent}"]) == 2
     assert len(lcd.calls_of("DisplayPILImage")) == 2
+
+
+def test_histogram_draws_uniform_separated_bars(config):
+    class CapturingLcd(FakeLcd):
+        def __init__(self):
+            super().__init__()
+            self.images = []
+
+        def DisplayPILImage(self, image, x=0, y=0, **kwargs):
+            self.images.append(image)
+            super().DisplayPILImage(image, x, y, **kwargs)
+
+    lcd = CapturingLcd()
+    spec = {
+        "type": "histogram",
+        "x": 0,
+        "y": 0,
+        "width": 60,
+        "height": 20,
+        "value": "{summary.cpu_percent}",
+        "history": 6,
+        "min_value": 0,
+        "max_value": 100,
+        "bar_color": "0, 230, 118",
+        "bar_width": 3,
+        "bar_gap": 2,
+        "background_color": "0, 0, 0",
+    }
+    ctx = {"summary": Summary(cpu_percent=100.0)}
+    histories = {}
+    for _ in range(6):
+        widgets.draw_histogram(lcd, config, spec, ctx, histories)
+
+    image = lcd.images[-1].convert("RGB")
+    bar = (0, 230, 118)
+    runs = []
+    current = 0
+    for cx in range(60):
+        if image.getpixel((cx, 19)) == bar:
+            current += 1
+        elif current:
+            runs.append(current)
+            current = 0
+    if current:
+        runs.append(current)
+
+    assert len(runs) == 6
+    assert all(run == 3 for run in runs)
+
+
+def test_widget_signature_tracks_bound_values(config):
+    spec = {"type": "text", "x": 0, "y": 0, "value": "{summary.vms_running}"}
+
+    first = widgets.widget_signature(spec, {"summary": Summary(vms_running=1)})
+    same = widgets.widget_signature(spec, {"summary": Summary(vms_running=1)})
+    changed = widgets.widget_signature(spec, {"summary": Summary(vms_running=2)})
+
+    assert first == same
+    assert first != changed
+
+
+def test_widget_signature_is_none_for_graphs(config):
+    for widget_type in ("line_graph", "histogram"):
+        assert widgets.widget_signature({"type": widget_type}, {}) is None
+
+
+def test_histogram_uses_driver_image_cache(config):
+    class CachingLcd(FakeLcd):
+        def __init__(self):
+            super().__init__()
+            self.opened = []
+
+        def open_image(self, path):
+            self.opened.append(path)
+            return Image.open(path)
+
+    lcd = CachingLcd()
+    spec = {
+        "type": "histogram",
+        "x": 0,
+        "y": 0,
+        "width": 20,
+        "height": 10,
+        "value": "{summary.cpu_percent}",
+        "history": 5,
+    }
+    ctx = {"summary": Summary(cpu_percent=10.0)}
+    histories = {}
+
+    widgets.draw_histogram(lcd, config, spec, ctx, histories)
+    widgets.draw_histogram(lcd, config, spec, ctx, histories)
+
+    assert len(lcd.opened) == 2  # cache hook used, not Image.open directly

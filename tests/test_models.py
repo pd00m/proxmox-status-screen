@@ -40,7 +40,14 @@ def _server() -> Server:
             Guest(vmid=110, name="build", type="qemu", node="pve2", status="running", cpu=0.1, mem=1, maxmem=2),
         ],
     )
-    return Server(name="pve-main", online=True, nodes=[node1, node2], net_in=4096, net_out=2048)
+    return Server(
+        name="pve-main",
+        host="192.168.1.10",
+        online=True,
+        nodes=[node1, node2],
+        net_in=4096,
+        net_out=2048,
+    )
 
 
 def test_human_bytes():
@@ -100,4 +107,5 @@ def test_build_context():
     assert len(context["nodes"]) == 2
     assert len(context["guests"]) == 3
     assert context["server"]["pve-main"].name == "pve-main"
+    assert context["server"]["pve-main"].host == "192.168.1.10"
     assert context["node"]["pve1"].name == "pve1"

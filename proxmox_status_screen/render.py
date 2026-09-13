@@ -10,7 +10,7 @@ from typing import Any, Mapping, MutableMapping
 from proxmox_status_screen.config import AppConfig
 from proxmox_status_screen.display import Display
 from proxmox_status_screen.log import logger
-from proxmox_status_screen.widgets import draw_widget, list_page_count
+from proxmox_status_screen.widgets import draw_widget, list_page_count, widget_signature
 
 
 class ThemeRenderer:
@@ -23,6 +23,9 @@ class ThemeRenderer:
         self.page_index = 0
         self._page_count = 1
         self._page_start = time.monotonic()
+        # Last resolved input signature per widget index, so unchanged widgets
+        # (and their display transfers) can be skipped.
+        self._signatures: MutableMapping[int, Any] = {}
 
     @property
     def widgets(self):
@@ -35,7 +38,16 @@ class ThemeRenderer:
 
     def render(self, context: Mapping[str, Any]) -> None:
         self._update_page(context)
-        for spec in self.widgets:
+        for index, spec in enumerate(self.widgets):
+            try:
+                signature = widget_signature(spec, context, self.page_index)
+            except Exception:  # noqa: BLE001 - never let detection kill the loop
+                logger.exception("Error signing widget type=%s", spec.get("type"))
+                signature = None
+
+            if signature is not None and self._signatures.get(index) == signature:
+                continue
+
             try:
                 draw_widget(
                     self.lcd,
@@ -47,6 +59,9 @@ class ThemeRenderer:
                 )
             except Exception:  # noqa: BLE001 - a bad widget must not kill the loop
                 logger.exception("Error drawing widget type=%s", spec.get("type"))
+                # Retry this widget on the next frame instead of caching the failure.
+                signature = None
+            self._signatures[index] = signature
 
     def _list_specs(self):
         return [

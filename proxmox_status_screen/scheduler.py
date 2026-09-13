@@ -22,17 +22,28 @@ class UpdateQueueHandler(threading.Thread):
     interleaved with other updates.
     """
 
-    def __init__(self, update_queue: "queue.Queue", stop_event: threading.Event):
+    def __init__(self, update_queue: queue.Queue, stop_event: threading.Event):
         super().__init__(name="display-updates", daemon=True)
         self.update_queue = update_queue
         self.stop_event = stop_event
+        self._stop_sentinel = object()
+
+    def stop(self) -> None:
+        """Signal the worker to exit once the queued updates have been drained.
+
+        Using a sentinel lets the worker block on the queue instead of polling
+        every 100 ms, which avoids needless CPU wakeups while idle.
+        """
+        self.stop_event.set()
+        self.update_queue.put(self._stop_sentinel)
 
     def run(self) -> None:
-        while not self.stop_event.is_set() or not self.update_queue.empty():
-            try:
-                func, args = self.update_queue.get(timeout=0.1)
-            except queue.Empty:
-                continue
+        while True:
+            item = self.update_queue.get()
+            if item is self._stop_sentinel:
+                self.update_queue.task_done()
+                break
+            func, args = item
             try:
                 func(*args)
             except Exception:  # noqa: BLE001

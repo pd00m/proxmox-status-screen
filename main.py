@@ -21,7 +21,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from proxmox_status_screen.client import ProxmoxClient  # noqa: E402
 from proxmox_status_screen.collector import Collector  # noqa: E402
-from proxmox_status_screen.config import ConfigError, load_config  # noqa: E402
+from proxmox_status_screen.config import (  # noqa: E402
+    MAX_INTERVAL,
+    MIN_INTERVAL,
+    ConfigError,
+    load_config,
+)
 from proxmox_status_screen.display import Display  # noqa: E402
 from proxmox_status_screen.log import logger, setup_logging  # noqa: E402
 from proxmox_status_screen.models import build_context  # noqa: E402
@@ -100,7 +105,7 @@ def cmd_run(config) -> int:
     try:
         run_monitor_loop(config, collector, renderer, stop_event)
     finally:
-        stop_event.set()
+        worker.stop()
         worker.join(timeout=10)
         collector.close()
         display.turn_off()
@@ -122,6 +127,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--log-file", default=None, help="Override log file path")
     parser.add_argument("--log-level", default=None, help="Override console log level")
     parser.add_argument(
+        "-i",
+        "--interval",
+        type=float,
+        default=None,
+        metavar="SECONDS",
+        help=(
+            "Override the refresh interval in seconds "
+            f"({MIN_INTERVAL:.0f}-{MAX_INTERVAL:.0f}, default: render.interval)"
+        ),
+    )
+    parser.add_argument(
         "command",
         choices=["run", "once", "check"],
         help="run: daemon loop | once: render one frame | check: test connectivity",
@@ -140,6 +156,17 @@ def main(argv=None) -> int:
     except ConfigError as exc:
         logger.error("Configuration error: %s", exc)
         return 2
+
+    if args.interval is not None:
+        if not MIN_INTERVAL <= args.interval <= MAX_INTERVAL:
+            logger.error(
+                "Configuration error: --interval must be between %.0fs and %.0fs (got %gs)",
+                MIN_INTERVAL,
+                MAX_INTERVAL,
+                args.interval,
+            )
+            return 2
+        config.render.interval = args.interval
 
     setup_logging(
         args.log_file or config.log_file,

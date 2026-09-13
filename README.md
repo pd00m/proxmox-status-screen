@@ -20,8 +20,22 @@ foreground and is meant to be supervised by systemd.
 - YAML theme with data bindings (`{summary.vms_running}`, `{guest.cpu_percent:.0f}%`, ...)
 - Repeating guest/node list widget with automatic page rotation
 - Text, progress bar, radial gauge, line graph, histogram and image widgets (Pillow)
+- Uniform, evenly spaced histogram bars
 - Simulated display (`screencap.png` + live browser preview) for development without hardware
 - Built-in `stub` data source: full dashboard without any Proxmox server
+
+### Efficiency
+
+The daemon is designed to keep CPU usage low on always-on, low-power hosts:
+
+- The refresh interval is configurable from 5 s to 1 h (`render.interval`, or
+  `--interval` on the command line).
+- Unchanged widgets are not redrawn: each widget's resolved inputs are hashed and
+  a frame is skipped when nothing changed (history-based graphs always redraw).
+- Background images are decoded once and cached instead of being re-read every
+  frame.
+- The display write worker blocks on its queue instead of polling, so an idle
+  daemon does no periodic work.
 
 ## Requirements
 
@@ -155,7 +169,7 @@ fully documented example. The main sections are:
 |---|---|
 | `theme` | Folder name under `themes/` |
 | `display` | Hardware revision, COM port, brightness, orientation, SIMU options |
-| `render` | `interval` (seconds between API poll + redraw) and `page_interval` (seconds between guest-list pages) |
+| `render` | `interval` (seconds between API poll + redraw, 5–3600) and `page_interval` (seconds between guest-list pages) |
 | `data.source` | `proxmox` or `stub` |
 | `servers` | List of Proxmox endpoints (host, port, token, TLS) |
 
@@ -183,6 +197,8 @@ python main.py check   # validate config + test connectivity to every server
 ```
 
 All commands accept `--config PATH`, `--log-file PATH` and `--log-level LEVEL`.
+`run` and `once` also accept `--interval SECONDS` (`-i`) to override
+`render.interval`; the value must be between 5 seconds and 1 hour.
 
 ### systemd
 
@@ -211,7 +227,9 @@ EnvironmentFile=-/etc/proxmox-status-screen/env
 ## Theming
 
 A theme lives in `themes/<name>/` and contains a `theme.yaml` plus its assets.
-Two themes are bundled: `proxmox-default` and `proxmox-vertical` (8.8" portrait).
+Two themes are bundled: `proxmox-default` (3.5" landscape, single server panel
+in the vertical/TUI style) and `proxmox-vertical` (8.8" portrait, two stacked
+server panels).
 
 ### Data context
 
@@ -232,6 +250,7 @@ Examples:
 value: "{time:%H:%M:%S}"
 value: "VM {summary.vms_running}/{summary.vms_total}"
 value: "{server[pve-main].status}"
+value: "{servers[0].host}"          # configured server address (IP/hostname)
 value: "{item.cpu_percent:>3.0f}%"
 ```
 
@@ -241,10 +260,13 @@ value: "{item.cpu_percent:>3.0f}%"
 - `progress` – `value`, `x`, `y`, `width`, `height`, `min_value`, `max_value`, `bar_color`
 - `radial` – `value`, `x`/`y` (center), `radius`, `width`, `text`, `bar_color`, angles...
 - `line_graph` – `value`, `history`, `min_value`, `max_value`, `autoscale`, `line_color`, `axis`
-- `histogram` – `value`, `history`, `min_value`/`max_value` or `autoscale`, `bar_color`, `bar_gap`, `axis`
+- `histogram` – `value`, `history`, `min_value`/`max_value` or `autoscale`, `bar_color`,
+  `bar_width` (fixed integer bar width, default 3), `bar_gap` (pixels, default 2),
+  `axis`, `axis_color`. Bars are uniform; only the most recent samples that fit are shown.
 - `image` – `path`, `x`, `y`, `width`, `height`
-- `list` – `source` (`guests`/`nodes`/`servers`), `rows`, `row_height`, `page_interval`,
-  `sort_by`, `sort_reverse`, `filter_status`, and `fields` (each a `text` widget with
+- `list` – `source` (`guests`/`nodes`/`servers`) **or** `server` (index/name, gathers
+  that server's guests), `rows`, `row_height`, `page_interval`, `sort_by`, `sort_reverse`,
+  `filter_status`, `exclude_templates`, and `fields` (each a `text` widget with
   relative `x`/`y`). A field can also set `color_value` + `color_map` to color each
   row based on a binding (e.g. green `R` for running, red `S` for stopped).
 
