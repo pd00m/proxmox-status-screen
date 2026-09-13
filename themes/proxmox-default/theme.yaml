@@ -1,0 +1,147 @@
+# Proxmox default theme - 3.5" landscape (480x320)
+#
+# Widgets use Python format-string bindings resolved against the data context.
+# Available top-level keys: time, date, summary, servers, server, nodes, node,
+# guests. Inside a `list` widget, {item.x} (or {guest.x} / {node.x}) refers to
+# the current row.
+---
+display:
+  size: '3.5"'
+  orientation: landscape
+  rgb_led: 0, 160, 220
+
+static_images:
+  BACKGROUND:
+    path: background.png
+    x: 0
+    y: 0
+    width: 480
+    height: 320
+
+static_text:
+  TITLE:
+    text: "PROXMOX STATUS"
+    x: 12
+    y: 5
+    font: geforce/GeForce-Bold.ttf
+    font_size: 16
+    font_color: 0, 200, 255
+    background_image: background.png
+
+widgets:
+  # --- Header -------------------------------------------------------------
+  - type: text
+    x: 468
+    y: 7
+    value: "{time:%H:%M:%S}"
+    font: roboto-mono/RobotoMono-Bold.ttf
+    font_size: 13
+    font_color: 200, 210, 225
+    align: right
+    anchor: rt
+
+  - type: text
+    x: 12
+    y: 33
+    value: "SRV {summary.servers_online}/{summary.servers_total}  VM {summary.vms_running}/{summary.vms_total}  CT {summary.cts_running}/{summary.cts_total}  MEM {summary.mem_used_human}/{summary.mem_total_human}"
+    font: roboto-mono/RobotoMono-Regular.ttf
+    font_size: 11
+    font_color: 150, 165, 185
+
+  # --- Aggregate CPU history ---------------------------------------------
+  - type: line_graph
+    x: 120
+    y: 52
+    width: 348
+    height: 40
+    value: "{summary.cpu_percent}"
+    history: 60
+    min_value: 0
+    max_value: 100
+    autoscale: false
+    line_color: 0, 200, 255
+    line_width: 2
+    axis: true
+    axis_color: 70, 85, 110
+    axis_font: roboto/Roboto-Regular.ttf
+    axis_font_size: 9
+
+  # --- Left gauges --------------------------------------------------------
+  - type: radial
+    x: 58
+    y: 130
+    radius: 44
+    width: 10
+    value: "{summary.cpu_percent}"
+    text: "{summary.cpu_percent:.0f}%"
+    show_text: true
+    min_value: 0
+    max_value: 100
+    angle_start: 120
+    angle_end: 60
+    angle_steps: 30
+    angle_sep: 3
+    clockwise: true
+    bar_color: 0, 200, 255
+    font: roboto/Roboto-Bold.ttf
+    font_size: 16
+    font_color: 220, 230, 245
+
+  - type: radial
+    x: 58
+    y: 238
+    radius: 44
+    width: 10
+    value: "{summary.mem_percent}"
+    text: "{summary.mem_percent:.0f}%"
+    show_text: true
+    min_value: 0
+    max_value: 100
+    angle_start: 120
+    angle_end: 60
+    angle_steps: 30
+    angle_sep: 3
+    clockwise: true
+    bar_color: 120, 220, 140
+    font: roboto/Roboto-Bold.ttf
+    font_size: 16
+    font_color: 220, 230, 245
+
+  # --- Guest list (auto-pages if there are more than 10) ------------------
+  - type: list
+    x: 120
+    y: 100
+    width: 348
+    rows: 10
+    row_height: 22
+    page_interval: 10
+    source: guests
+    sort_by: cpu_percent
+    sort_reverse: true
+    fields:
+      - x: 0
+        width: 120
+        value: "{item.kind} {item.name}"
+        font: roboto-mono/RobotoMono-Regular.ttf
+        font_size: 12
+        font_color: 210, 220, 235
+      - x: 128
+        width: 60
+        value: "{item.status}"
+        font: roboto-mono/RobotoMono-Regular.ttf
+        font_size: 11
+        font_color: 150, 165, 185
+      - x: 190
+        width: 55
+        value: "{item.cpu_percent:>3.0f}%"
+        font: roboto-mono/RobotoMono-Bold.ttf
+        font_size: 12
+        font_color: 0, 200, 255
+        align: right
+      - x: 255
+        width: 60
+        value: "{item.mem_percent:>3.0f}%"
+        font: roboto-mono/RobotoMono-Bold.ttf
+        font_size: 12
+        font_color: 120, 220, 140
+        align: right

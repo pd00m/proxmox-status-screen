@@ -1,0 +1,10 @@
+# Core dependencies
+requests>=2.28      # Proxmox REST API
+PyYAML>=6.0         # config.yaml / theme.yaml
+Pillow>=9.0         # image generation for the display
+pyserial>=3.5       # serial displays (all revisions except TUR_USB)
+numpy>=1.24         # efficient RGB565/BGR image serialization
+
+# Only required for the TUR_USB display revision:
+pyusb>=1.2
+pycryptodome>=3.15

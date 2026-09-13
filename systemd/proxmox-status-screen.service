@@ -1,0 +1,21 @@
+[Unit]
+Description=Proxmox status screen
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Adjust paths/user to your installation
+WorkingDirectory=/opt/proxmox-status-screen
+ExecStart=/usr/bin/python3 /opt/proxmox-status-screen/main.py run --config /etc/proxmox-status-screen/config.yaml
+# Uncomment to keep API token secrets out of config.yaml:
+# EnvironmentFile=-/etc/proxmox-status-screen/env
+User=proxmox-status-screen
+Group=proxmox-status-screen
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

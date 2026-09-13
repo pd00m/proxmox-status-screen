@@ -1,0 +1,59 @@
+# proxmox-status-screen configuration
+#
+# Copy this file to config.yaml and edit it. Any value may reference an
+# environment variable with ${VAR}, which is the recommended way to keep API
+# token secrets out of the file (e.g. token_secret: ${PVE_TOKEN}).
+
+# Theme folder name under themes/
+theme: proxmox-default
+
+# Where to log. Relative paths are resolved next to this config file.
+log_file: proxmox-status-screen.log
+log_level: INFO   # DEBUG, INFO, WARNING, ERROR
+
+display:
+  # Display revision:
+  # - A         Turing 3.5" / UsbPCMonitor 3.5"/5"
+  # - B         XuanFang 3.5" (incl. flagship)
+  # - C         Turing 2.1"/2.8"/5"/8.8"
+  # - D         Kipye Qiye Smart Display 3.5"
+  # - TUR_USB   Turing HW rev 1.x: 4.6"/5.2"/8"/8.8"/9.2"
+  # - WEACT_A   WeAct Studio FS V1 3.5"
+  # - WEACT_B   WeAct Studio FS V1 0.96"
+  # - SIMU      Simulated display: writes screencap.png (no hardware needed)
+  revision: SIMU
+  com_port: AUTO          # AUTO or e.g. /dev/ttyACM0, COM3
+  brightness: 20          # 0-100 (rev. A can get hot at high brightness)
+  reverse: false          # Reverse orientation
+  reset_on_startup: true  # Reset the display at startup
+  # SIMU only: serve a live preview of the simulated screen
+  simu_webserver: true
+  simu_webserver_port: 5678
+
+render:
+  interval: 5             # Seconds between data refresh + screen redraw
+  page_interval: 10       # Seconds between guest-list pages (when overflowing)
+
+data:
+  # proxmox: query the servers below | stub: generated demo data
+  source: proxmox
+
+servers:
+  - name: pve-main
+    host: 192.168.1.10
+    port: 8006
+    # Create with: pveum user token add monitor@pve turing --privsep 0
+    token_id: monitor@pve!turing
+    token_secret: ${PVE_TOKEN}
+    verify_ssl: false     # Proxmox usually uses a self-signed certificate
+    timeout: 5
+    nodes: []             # Empty = all nodes; otherwise e.g. [pve1, pve2]
+
+  - name: pve-edge
+    host: 10.0.0.5
+    port: 8006
+    token_id: monitor@pve!turing
+    token_secret: ${PVE_TOKEN_EDGE}
+    verify_ssl: false
+    timeout: 5
+    nodes: []

@@ -1,0 +1,38 @@
+# Test fixture: canonical development configuration (simulated display + stub
+# data). Kept separate from config.yaml so tests do not depend on the user's
+# local, real-world configuration.
+
+theme: proxmox-default
+
+log_file: proxmox-status-screen.log
+log_level: INFO
+
+display:
+  revision: SIMU
+  com_port: AUTO
+  brightness: 20
+  reverse: false
+  reset_on_startup: true
+  simu_webserver: true
+  simu_webserver_port: 5680
+
+render:
+  interval: 5
+  page_interval: 8
+
+data:
+  source: stub
+
+servers:
+  - name: pve-main
+    host: 192.168.1.10
+    port: 8006
+    token_id: monitor@pve!turing
+    token_secret: dummy
+    verify_ssl: false
+  - name: pve-edge
+    host: 10.0.0.5
+    port: 8006
+    token_id: monitor@pve!turing
+    token_secret: dummy
+    verify_ssl: false
