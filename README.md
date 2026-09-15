@@ -234,6 +234,50 @@ PVE_TOKEN=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 EnvironmentFile=-/etc/proxmox-status-screen/env
 ```
 
+## Troubleshooting
+
+### Display not detected / "Access denied" on Linux
+
+First confirm the OS sees the display on USB:
+
+```bash
+lsusb
+```
+
+Turing displays appear as `ID 1cbe:xxxx` (e.g. `1cbe:0088` for the 8.8"). If it
+shows up there but `python main.py once` fails with:
+
+```
+usb.core.USBError: [Errno 13] Access denied (insufficient permissions)
+```
+
+the device node is owned by `root` and your user has no access. Install a udev
+rule so your user can talk to the display:
+
+```bash
+echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="1cbe", MODE="0666"' \
+  | sudo tee /etc/udev/rules.d/99-turing.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+Then unplug/replug the display (or run `sudo udevadm trigger` again) and retry
+`python main.py once`. The rule grants access to any local user, which is fine on
+a personal machine; for a tighter rule use `GROUP="plugdev"` instead of
+`MODE="0666"` (the group must exist and your user must be a member).
+
+If `lsusb` does not list the display at all, check the cable and USB port, and
+make sure `display.revision` in `config.yaml` matches the model (see
+[Display revisions](#display-revisions)).
+
+### Nothing drawn / no visible change
+
+- `python main.py check` validates config and server connectivity but does **not**
+  touch the display — use `python main.py once` to render a single frame.
+- Confirm the display is on and `display.brightness` is not `0`.
+- Try `display.revision: SIMU` and inspect `screencap.png` to rule out rendering
+  problems (e.g. a theme whose `display.size` does not match your hardware).
+
 ## Theming
 
 A theme lives in `themes/<name>/` and contains a `theme.yaml` plus its assets.
